@@ -28,6 +28,7 @@ const User = sequelize.define("users", {
     type: DataTypes.STRING,
     unique: true,
     allowNull: false,
+    is: /^[79]\d{7}$/i,
     validate: {
       isNumeric: true,
       notEmpty: true,
@@ -45,8 +46,8 @@ sequelize
   .then(() => {
     console.log("Users Table Created!");
   })
-  .catch((err) => {
-    console.log(err);
+  .catch((error) => {
+    console.log(error);
   });
 
 module.exports.User = User;

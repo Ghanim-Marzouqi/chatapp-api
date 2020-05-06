@@ -1,7 +1,6 @@
 // Import Modules
 const { DataTypes } = require("sequelize");
 const { sequelize } = require("../config/Sequelize");
-const { User } = require("./User");
 
 // Create Message Schema
 const Message = sequelize.define("messages", {
@@ -18,17 +17,14 @@ const Message = sequelize.define("messages", {
   },
 });
 
-// Create One-To-Many Relationship (Each Message Has One User)
-Message.belongsTo(User);
-
 // Sync Database
 sequelize
   .sync()
   .then(() => {
     console.log("Messages Table Created!");
   })
-  .catch((err) => {
-    console.log(err);
+  .catch((error) => {
+    console.log(error);
   });
 
 module.exports.Message = Message;

@@ -20,10 +20,19 @@ module.exports.loginValidation = {
   }),
 };
 
-// Create Message Validation
-module.exports.createMessageValidation = {
+// Create Conversation Validation
+module.exports.createConversationValidation = {
   body: Joi.object({
     message: Joi.string().required(),
-    userId: Joi.number().required(),
+    senderId: Joi.number().required(),
+    receiverId: Joi.number().required(),
+  }),
+};
+
+// Create Conversation Validation
+module.exports.getConversationValidation = {
+  body: Joi.object({
+    senderId: Joi.number().required(),
+    receiverId: Joi.number().required(),
   }),
 };
