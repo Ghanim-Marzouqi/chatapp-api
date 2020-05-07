@@ -49,14 +49,23 @@ app.post("/users", validate(createUserValidation, {}, {}), async (req, res) => {
     });
 
     // Return Create User Response
-    res.status(201).json({
-      message: `New user: ${user.name} has created!`,
+    res.json({
+      statusCode: 201,
+      message: `New User (${user.name}) Created!`,
     });
   } catch (error) {
     console.log("{/users} ERROR", error);
-    res.status(500).json({
-      message: error,
-    });
+    if (error.name === "SequelizeUniqueConstraintError") {
+      res.json({
+        statusCode: 500,
+        message: "User Already Exists",
+      });
+    } else {
+      res.json({
+        statusCode: 500,
+        message: error,
+      });
+    }
   }
 });
 
@@ -71,19 +80,22 @@ app.post("/auth", validate(loginValidation, {}, {}), async (req, res) => {
 
     // Check If User Exists
     if (user !== null) {
-      res.status(200).json({
+      res.json({
+        statusCode: 200,
         message: "User Logged In Successfully",
         user,
       });
     } else {
-      res.status(404).json({
+      res.json({
+        statusCode: 404,
         message: "User Does Not Exist",
         user,
       });
     }
   } catch (error) {
     console.log("{/auth} ERROR", error);
-    res.status(500).json({
+    res.json({
+      statusCode: 500,
       message: error,
     });
   }
@@ -115,8 +127,10 @@ app.post(
 
         if (conversation.id) {
           // Return Create User Response
-          res.status(201).json({
-            message: {
+          res.json({
+            statusCode: 201,
+            message: "Message Chat Created",
+            data: {
               messageText: msg.message,
               sender: sender.name,
               receiver: receiver.name,
@@ -124,24 +138,28 @@ app.post(
           });
         } else {
           // Return Create User Response
-          res.status(404).json({
+          res.json({
+            statusCode: 404,
             message: "Cannot Create Conversation",
           });
         }
       } else {
         if (sender === null) {
-          res.status(404).json({
+          res.json({
+            statusCode: 404,
             message: "Sender User Does Not Exist",
           });
         } else if (receiver === null) {
-          res.status(404).json({
+          res.json({
+            statusCode: 404,
             message: "Receiver User Does Not Exist",
           });
         }
       }
     } catch (error) {
       console.log(`{"/conversations/create"} ERROR`, error);
-      res.status(500).json({
+      res.json({
+        statusCode: 500,
         message: error,
       });
     }
@@ -162,7 +180,7 @@ app.post(
       let receiver = await User.findOne({ where: { id: receiverId } });
 
       if (sender !== null && receiver !== null) {
-        // Find All Conversations Between Sender And Receiver
+        // Fetch Sender Records
         let records = await sequelize.query(
           "SELECT m.* FROM messages m, conversations c WHERE m.id = c.messageId AND c.senderId = ? AND c.receiverId = ?",
           {
@@ -177,18 +195,21 @@ app.post(
         });
       } else {
         if (sender === null) {
-          res.status(404).json({
+          res.json({
+            statusCode: 404,
             message: "Sender User Does Not Exist",
           });
         } else if (receiver === null) {
-          res.status(404).json({
+          res.json({
+            statusCode: 404,
             message: "Receiver User Does Not Exist",
           });
         }
       }
     } catch (error) {
       console.log(`{"/conversations"} ERROR`, error);
-      res.status(500).json({
+      res.json({
+        statusCode: 500,
         message: error,
       });
     }
@@ -198,9 +219,16 @@ app.post(
 // Error Middleware
 app.use((error, req, res, next) => {
   if (error instanceof ValidationError) {
-    return res.status(error.statusCode).json(error);
+    console.log("ValidationError", error);
+    return res.json({
+      statusCode: error.statusCode,
+      message: error.message,
+    });
   }
-  return res.status(500).json(error);
+  return res.json({
+    statusCode: 500,
+    message: error,
+  });
 });
 
 // Run Server With Specified Port
