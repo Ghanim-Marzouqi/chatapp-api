@@ -30,6 +30,13 @@ module.exports.createConversationValidation = {
 };
 
 // Create Conversation Validation
+module.exports.getConversationUsersValidation = {
+  body: Joi.object({
+    senderId: Joi.number().required(),
+  }),
+};
+
+// Create Conversation Validation
 module.exports.getConversationValidation = {
   body: Joi.object({
     senderId: Joi.number().required(),

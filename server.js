@@ -9,6 +9,7 @@ const {
   createUserValidation,
   loginValidation,
   createConversationValidation,
+  getConversationUsersValidation,
   getConversationValidation,
 } = require("./config/RequestValidation");
 const { User } = require("./models/User");
@@ -54,7 +55,7 @@ app.post("/users", validate(createUserValidation, {}, {}), async (req, res) => {
       message: `New User (${user.name}) Created!`,
     });
   } catch (error) {
-    console.log("{/users} ERROR", error);
+    console.log("POST: {/users} ERROR", error);
     if (error.name === "SequelizeUniqueConstraintError") {
       res.json({
         statusCode: 500,
@@ -93,13 +94,68 @@ app.post("/auth", validate(loginValidation, {}, {}), async (req, res) => {
       });
     }
   } catch (error) {
-    console.log("{/auth} ERROR", error);
+    console.log("POST: {/auth} ERROR", error);
     res.json({
       statusCode: 500,
       message: error,
     });
   }
 });
+
+// Get Conversations Route
+app.post(
+  "/conversations",
+  validate(getConversationValidation, {}, {}),
+  async (req, res) => {
+    try {
+      // Get Sender Id
+      const { senderId, receiverId } = req.body;
+
+      // Get Sender And Receiver
+      let sender = await User.findOne({ where: { id: senderId } });
+      let receiver = await User.findOne({ where: { id: receiverId } });
+
+      if (sender !== null && receiver !== null) {
+        // Fetch Sender Records
+        let records = await sequelize.query(
+          "SELECT m.* FROM messages m, conversations c WHERE m.id = c.messageId AND c.senderId = ? AND c.receiverId = ?",
+          {
+            replacements: [senderId, receiverId],
+            type: QueryTypes.SELECT,
+          }
+        );
+
+        res.json({
+          statusCode: 200,
+          message: "Conversations loaded successfully",
+          data: {
+            sender,
+            receiver,
+            conversations: records,
+          },
+        });
+      } else {
+        if (sender === null) {
+          res.json({
+            statusCode: 404,
+            message: "Sender User Does Not Exist",
+          });
+        } else if (receiver === null) {
+          res.json({
+            statusCode: 404,
+            message: "Receiver User Does Not Exist",
+          });
+        }
+      }
+    } catch (error) {
+      console.log(`POST: {"/conversations"} ERROR`, error);
+      res.json({
+        statusCode: 500,
+        message: error,
+      });
+    }
+  }
+);
 
 // Create Conversation Route
 app.post(
@@ -166,48 +222,28 @@ app.post(
   }
 );
 
-// Get Conversations Route
+// Get Conversation User Route
 app.post(
-  "/conversations",
-  validate(getConversationValidation, {}, {}),
+  "/conversations/users",
+  validate(getConversationUsersValidation, {}, {}),
   async (req, res) => {
     try {
-      // Get Sender Id
-      const { senderId, receiverId } = req.body;
+      const { senderId } = req.body;
 
-      // Get Sender And Receiver
-      let sender = await User.findOne({ where: { id: senderId } });
-      let receiver = await User.findOne({ where: { id: receiverId } });
+      // Get All Users
+      let users = await sequelize.query("SELECT * FROM `users` WHERE id != ?", {
+        replacements: [senderId],
+        type: QueryTypes.SELECT,
+      });
 
-      if (sender !== null && receiver !== null) {
-        // Fetch Sender Records
-        let records = await sequelize.query(
-          "SELECT m.* FROM messages m, conversations c WHERE m.id = c.messageId AND c.senderId = ? AND c.receiverId = ?",
-          {
-            replacements: [senderId, receiverId],
-            type: QueryTypes.SELECT,
-          }
-        );
-
-        res.status(200).json({
-          message: "Conversations loaded successfully",
-          conversations: records,
-        });
-      } else {
-        if (sender === null) {
-          res.json({
-            statusCode: 404,
-            message: "Sender User Does Not Exist",
-          });
-        } else if (receiver === null) {
-          res.json({
-            statusCode: 404,
-            message: "Receiver User Does Not Exist",
-          });
-        }
-      }
+      // Return Response
+      res.json({
+        statusCode: 200,
+        message: "Users Fetched Successfully",
+        users,
+      });
     } catch (error) {
-      console.log(`{"/conversations"} ERROR`, error);
+      console.log("GET: {/conversations/users} ERROR", error);
       res.json({
         statusCode: 500,
         message: error,
