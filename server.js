@@ -116,8 +116,8 @@ app.post(
       let receiver = await User.findOne({ where: { id: receiverId } });
 
       if (sender !== null && receiver !== null) {
-        // Fetch Sender Records
-        let records = await sequelize.query(
+        // Get Sender Messages
+        let senderMessages = await sequelize.query(
           "SELECT m.* FROM messages m, conversations c WHERE m.id = c.messageId AND c.senderId = ? AND c.receiverId = ?",
           {
             replacements: [senderId, receiverId],
@@ -125,14 +125,46 @@ app.post(
           }
         );
 
+        // Get Receiver Messages
+        let receiverMessages = await sequelize.query(
+          "SELECT m.* FROM messages m, conversations c WHERE m.id = c.messageId AND c.senderId = ? AND c.receiverId = ?",
+          {
+            replacements: [receiverId, senderId],
+            type: QueryTypes.SELECT,
+          }
+        );
+
+        // Create New Arrays To Include Sender & Receiver Users
+        let senderCoversations = senderMessages.map((m) => ({
+          messageId: m.id,
+          messageText: m.message,
+          messageCreatedAt: m.createdAt,
+          messageUpdatedAt: m.updatedAt,
+          sender,
+          receiver,
+        }));
+
+        let receiverConversations = receiverMessages.map((m) => ({
+          messageId: m.id,
+          messageText: m.message,
+          sender: receiver,
+          receiver: sender,
+        }));
+
+        // Merge Sender And Receiver Messages
+        let totalConversations = senderCoversations.concat(
+          receiverConversations
+        );
+
+        // Sort Messages By Created At Date
+        let sortedConversations = totalConversations.sort(
+          (a, b) => new Date(a.messageCreatedAt) - new Date(b.messageCreatedAt)
+        );
+
         res.json({
           statusCode: 200,
           message: "Conversations loaded successfully",
-          data: {
-            sender,
-            receiver,
-            conversations: records,
-          },
+          conversations: sortedConversations,
         });
       } else {
         if (sender === null) {
