@@ -134,19 +134,20 @@ app.post(
           }
         );
 
-        // Create New Arrays To Include Sender & Receiver Users
+        // Create New Arrays To Include Sender Messages
         let senderCoversations = senderMessages.map((m) => ({
           messageId: m.id,
           messageText: m.message,
           messageCreatedAt: m.createdAt,
-          messageUpdatedAt: m.updatedAt,
           sender,
           receiver,
         }));
 
+        // Create New Arrays To Include Receiver Messages
         let receiverConversations = receiverMessages.map((m) => ({
           messageId: m.id,
           messageText: m.message,
+          messageCreatedAt: m.createdAt,
           sender: receiver,
           receiver: sender,
         }));
@@ -161,6 +162,7 @@ app.post(
           (a, b) => new Date(a.messageCreatedAt) - new Date(b.messageCreatedAt)
         );
 
+        // Return Response
         res.json({
           statusCode: 200,
           message: "Conversations loaded successfully",
